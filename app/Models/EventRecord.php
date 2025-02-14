@@ -13,4 +13,9 @@ class EventRecord extends Model
     {
         return $this->belongsTo(Event::class);
     }
+
+    public function setAmountAttribute($value)
+    {
+        $this->attributes['amount'] = $value * 1000;
+    }
 }

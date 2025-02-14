@@ -8,7 +8,9 @@ use App\Models\Event;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\EventRecord;
+use Illuminate\Support\Str;
 use Filament\Resources\Resource;
+use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Actions\EditAction;
@@ -73,6 +75,7 @@ class EventRecordResource extends Resource
                     ->required()
                     ->numeric()
                     ->minValue(0)
+                    ->prefix('Rp')
                     ->validationMessages([
                         'required' => 'Total Uang wajib diisi',
                         'minValue' => 'Total Uang tidak boleh minus',
@@ -82,26 +85,43 @@ class EventRecordResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $event = Event::all()->pluck('name', 'id');
+
         return $table
             ->columns([
                 TextColumn::make('No')
                     ->rowIndex(),
                 TextColumn::make('event.name')
                     ->label('Nama Event')
-                    ->sortable(),
+                    ->formatStateUsing(fn(string $state): string => Str::title($state)),
                 TextColumn::make('name')
                     ->label('Nama User')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->formatStateUsing(fn(string $state): string => Str::title($state)),
                 TextColumn::make('address')
                     ->label('Alamat')
-                    ->sortable(),
+                    ->formatStateUsing(fn(string $state): string => Str::title($state)),
                 TextColumn::make('amount')
                     ->label('Total Uang')
+                    ->sortable()
                     ->money('IDR'),
             ])
             ->filters([
-                //
+                Filter::make('event_id')
+                    ->form([
+                        Select::make('event_id')
+                            ->label('Nama Event')
+                            ->options($event)
+                            ->searchable(),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['event_id'],
+                                fn(Builder $query, $data): Builder => $query->where('event_id', $data),
+                            );
+                    }),
             ])
             ->actions([
                 EditAction::make(),
